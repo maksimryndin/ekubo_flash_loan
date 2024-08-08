@@ -1,0 +1,22 @@
+[package]
+name = "ekubo_flash_loan"
+version = "0.1.0"
+edition = "2023_11"
+
+# See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
+
+[dependencies]
+# in case of Ekubo contract we should freeze the version
+# as any change in logic can be fatal
+ekubo = { git = "https://github.com/EkuboProtocol/abis", rev= "67f4ebc1987c45a09abbfbd7fab928354ca8ba2c" }
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.13.0" }
+starknet = "=2.6.3"
+
+[dev-dependencies]
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.27.0" }
+
+[[target.starknet-contract]]
+sierra = true
+
+[scripts]
+test = "snforge test"
