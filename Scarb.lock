@@ -4,21 +4,15 @@ version = 1
 [[package]]
 name = "ekubo"
 version = "0.1.0"
-source = "git+https://github.com/EkuboProtocol/abis?rev=67f4ebc1987c45a09abbfbd7fab928354ca8ba2c#67f4ebc1987c45a09abbfbd7fab928354ca8ba2c"
+source = "git+https://github.com/EkuboProtocol/abis?branch=cairo-2-7-0#cd5eb485c7fa49434db3afbddd01ce92164e9ef3"
 
 [[package]]
 name = "ekubo_flash_loan"
 version = "0.1.0"
 dependencies = [
  "ekubo",
- "openzeppelin",
  "snforge_std",
 ]
-
-[[package]]
-name = "openzeppelin"
-version = "0.13.0"
-source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.13.0#978b4e75209da355667d8954d2450e32bd71fe49"
 
 [[package]]
 name = "snforge_std"
