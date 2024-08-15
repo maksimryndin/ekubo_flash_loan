@@ -33,12 +33,11 @@ pub mod arbitrage {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, core: ContractAddress) {
+    fn constructor(ref self: ContractState, owner: ContractAddress, core: ContractAddress) {
         let core = ekubo_core::ICoreDispatcher { contract_address: core };
         self.core.write(core);
-        let caller: ContractAddress = get_caller_address();
-        assert(!caller.is_zero(), 'caller is the zero address');
-        self.owner.write(caller);
+        assert(!owner.is_zero(), 'owner is the zero address');
+        self.owner.write(owner);
     }
 
     #[abi(embed_v0)]
@@ -152,6 +151,9 @@ pub mod arbitrage {
 
         #[inline(always)]
         fn multi_multihop_swap(ref self: ContractState, swaps: Array<Swap>) {
+            // get_caller_address is globally available builtin function
+            // to get the address of a contract who calls the current method
+            // (remember, in Starknet user accounts are also contracts)
             assert(self.owner.read() == get_caller_address(), 'unauthorized');
             let _arr: Span<felt252> = shared_locker::call_core_with_callback(
                 self.core.read(), @swaps

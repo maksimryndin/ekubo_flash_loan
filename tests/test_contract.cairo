@@ -34,7 +34,9 @@ fn declare_and_deploy() -> IArbitrageurDispatcher {
     // (the name of the contract is the contract module name)
     let contract = declare("arbitrage").unwrap();
     // deploy function accepts a snap of an array of contract arguments serialized as felt252
-    let (contract_address, _) = contract.deploy(@array![EKUBO_CORE_ADDRESS]).unwrap();
+    let (contract_address, _) = contract
+        .deploy(@array![test_address().into(), EKUBO_CORE_ADDRESS])
+        .unwrap();
 
     // Create a Dispatcher object that will allow interacting with the deployed contract
     IArbitrageurDispatcher { contract_address }
@@ -245,4 +247,63 @@ fn test_access() {
     assert_eq!(dispatcher.get_owner(), test_address());
 
     dispatcher.multi_multihop_swap(array![]);
+}
+
+#[should_panic(expected: ('unprofitable swap',))]
+#[test]
+#[fork("SEPOLIA_FORK")]
+fn test_unprofitable_arbitrage() {
+    // swapping forth and back from the same pool is unprofitable
+    let first_node = RouteNode {
+        pool_key: PoolKey {
+            token0: contract_address_const::<
+                0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d
+            >(),
+            token1: contract_address_const::<
+                0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+            >(),
+            fee: 0x20c49ba5e353f80000000000000000,
+            tick_spacing: 1000,
+            extension: contract_address_const::<0x0>()
+        },
+        // ratio_limit = (int("0x12c254430f3344e33e96462b41ae77960", 16) / 2**128) ** 2
+        sqrt_ratio_limit: 0x12c254430f3344e33e96462b41ae77960,
+        skip_ahead: 0x0
+    };
+
+    let second_node = RouteNode {
+        pool_key: PoolKey {
+            token0: contract_address_const::<
+                0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d
+            >(),
+            token1: contract_address_const::<
+                0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+            >(),
+            fee: 0x20c49ba5e353f80000000000000000,
+            tick_spacing: 1000,
+            extension: contract_address_const::<0x0>()
+        },
+        // sqrt_ratio_limit = (1/ratio_limit)**0.5
+        // hex(int(sqrt_ratio_limit * 2**128))
+        sqrt_ratio_limit: 0xda58ee1140fdc0000000000000000000,
+        skip_ahead: 0x0
+    };
+
+    let token_address = contract_address_const::<
+        0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+    >();
+    let amount: u128 = 0x2386f26fc10000; // 10000000000000000
+    let token_amount = TokenAmount {
+        token: token_address, amount: i129 { mag: amount, sign: false }
+    };
+
+    let token = IERC20Dispatcher { contract_address: token_address };
+    let balance_before = token.balanceOf(test_address());
+    assert_eq!(balance_before, 0);
+
+    let dispatcher = declare_and_deploy();
+    assert_eq!(dispatcher.get_owner(), test_address());
+
+    let route = array![first_node, second_node];
+    dispatcher.multihop_swap(route, token_amount);
 }
