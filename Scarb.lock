@@ -7,7 +7,7 @@ version = "0.1.0"
 source = "git+https://github.com/EkuboProtocol/abis#05bca296a02f2ae4e38bd64acc6a68e6de72c424"
 
 [[package]]
-name = "ekubo_flash_loan"
+name = "ekubo_flash_loan_example"
 version = "0.1.0"
 dependencies = [
  "ekubo",

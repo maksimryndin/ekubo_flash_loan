@@ -1,16 +1,13 @@
 [package]
-name = "ekubo_flash_loan"
+name = "ekubo_flash_loan_example"
 version = "0.1.0"
 edition = "2024_07"
 
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
-# in case of Ekubo contract we should freeze the version
-# as any change in logic can be fatal
+starknet = "2.7.1"
 ekubo = { git = "https://github.com/EkuboProtocol/abis" }
-#openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.15.0" }
-starknet = "=2.7.1"
 
 [dev-dependencies]
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.27.0" }
@@ -24,4 +21,4 @@ test = "snforge test"
 [[tool.snforge.fork]]
 name = "SEPOLIA_FORK"
 url = "https://free-rpc.nethermind.io/sepolia-juno/v0_7"
-block_id.number = "104487"
+block_id.number = "104487" # we use a specific block for reproducibility
