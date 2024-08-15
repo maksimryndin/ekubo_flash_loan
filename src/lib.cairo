@@ -23,6 +23,7 @@ mod Errors {
     pub const UNPROFITABLE_SWAP: felt252 = 'Unprofitable swap';
 }
 
+
 /// Main arbitrage bot contract
 #[starknet::contract]
 pub mod Arbitrage {
@@ -36,7 +37,6 @@ pub mod Arbitrage {
     use ekubo::types::delta::{Delta};
     use ekubo::router_lite::{RouteNode, TokenAmount, Swap};
     use ekubo::components::shared_locker;
-    use ekubo::interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use ekubo::types::i129::{i129, i129Trait};
 
     // This data is stored onchain (non-contiguously)
@@ -99,8 +99,7 @@ pub mod Arbitrage {
             // deserialize the input into defined data structures
             let mut swaps = shared_locker::consume_callback_data::<Array<Swap>>(core, data);
             let mut total_profit: i129 = Zero::zero();
-            let mut total_loan: i129 = Zero::zero();
-            let mut token: Option<ContractAddress> = Option::None;
+            let mut token: ContractAddress = Zero::zero();
 
             // for every swap (when an input amount is splitted between several swaps)
             while let Option::Some(swap) = swaps.pop_front() {
@@ -108,16 +107,14 @@ pub mod Arbitrage {
                 // if token amount is positive - it is an exact input
                 // otherwise it is an exact output
                 let mut token_amount = swap.token_amount;
-                token = Option::Some(swap.token_amount.token);
-                let mut loaned_amount = swap.token_amount;
+                token = swap.token_amount.token;
 
-                // flash loan
+                // flash loan - we have not yet enough funds but we can make a swap in advance
                 // we don't care here either it is an exact input or an exact output
                 // for the exact input - we loan the whole investment
                 // for the exact output - we loan the investment (yet unknown) + returns
                 // In both cases the loan should cover the investment
-                core.withdraw(loaned_amount.token, recipient, loaned_amount.amount.mag);
-                total_loan += i129 { mag: loaned_amount.amount.mag, sign: false };
+                let loaned_amount = swap.token_amount;
 
                 //we unwind the swap route - a path of interrelated token exchanges
                 while let Option::Some(node) = route.pop_front() {
@@ -166,42 +163,35 @@ pub mod Arbitrage {
                         };
                 };
 
+                assert(token_amount.token == loaned_amount.token, 'the same token');
                 // Exact input case: `token_amount` (contains the last output) and `loaned_amount`
-                // (contains the first input) are positive Exact output case: `token_amount`
-                // (contains the last input) and `loaned_amount` (contains the last output) are
-                // negative In both cases the difference is our actual net profit
-                total_profit += token_amount.amount - loaned_amount.amount
+                // (contains the first input) are positive
+                // Exact output case: `token_amount` (contains the last input) and `loaned_amount`
+                // (contains the last output) are negative
+                // In both cases the difference is our actual net profit
+                total_profit += token_amount.amount - loaned_amount.amount;
             };
 
             // The most important check we have
-            assert(
-                total_profit > Zero::zero(), total_profit.mag.into()
-            ); //Errors::UNPROFITABLE_SWAP);
+            assert(total_profit > Zero::zero(), Errors::UNPROFITABLE_SWAP);
 
             // Withdraw profits
-            let token = token.unwrap();
-            core.withdraw(token, recipient, total_profit.mag);
-
-            // Pay the loan back
-            let token = IERC20Dispatcher { contract_address: token };
-            token.approve(core.contract_address, total_loan.mag.into());
-            core.pay(token.contract_address);
+            core.withdraw(token, recipient, total_profit.try_into().unwrap());
 
             // We emit an event to indicate a new arbitrage
             self
                 .emit(
                     Event::Arbitrage(
-                        Arbitrage {
-                            recipient,
-                            profit: total_profit.mag.into(),
-                            token: token.contract_address
-                        }
+                        Arbitrage { recipient, profit: total_profit.mag.into(), token, }
                     )
                 );
 
             // as we don't care of the actual deltas
-            // just return an empty array
-            array![].span()
+            // just return an empty array to reduce gas costs
+            let mut serialized: Array<felt252> = array![];
+            let mut outputs: Array<Array<Delta>> = ArrayTrait::new();
+            Serde::serialize(@outputs, ref serialized);
+            serialized.span()
         }
     }
 

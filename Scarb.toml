@@ -8,9 +8,9 @@ edition = "2024_07"
 [dependencies]
 # in case of Ekubo contract we should freeze the version
 # as any change in logic can be fatal
-ekubo = { git = "https://github.com/EkuboProtocol/abis", branch = "cairo-2-7-0" }
+ekubo = { git = "https://github.com/EkuboProtocol/abis" }
 #openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.15.0" }
-starknet = ">=2.7.0"
+starknet = "=2.7.1"
 
 [dev-dependencies]
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.27.0" }
@@ -22,12 +22,6 @@ sierra = true
 test = "snforge test"
 
 [[tool.snforge.fork]]
-name = "MAINNET_FORK"
-url = "https://free-rpc.nethermind.io/mainnet-juno/v0_7"
-block_id.tag = "Latest"
-
-[[tool.snforge.fork]]
-name = "MAINNET_FORK_SWAP"
-url = "https://free-rpc.nethermind.io/mainnet-juno/v0_7"
-block_id.number = "658440"
-
+name = "SEPOLIA_FORK"
+url = "https://free-rpc.nethermind.io/sepolia-juno/v0_7"
+block_id.number = "104487"
